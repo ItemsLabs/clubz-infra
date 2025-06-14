@@ -1,0 +1,135 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: qa
+  name: mobile-api
+  labels:
+    app: mobile-api
+    purpose: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mobile-api
+  template:
+    metadata:
+      labels:
+        app: mobile-api
+        purpose: api
+      spec:
+        containers:
+        - name: mobile-api
+          image: registry.digitalocean.com/gameon-ams3/laliga-matchfantasy-admin:43221d3
+          imagePullPolicy: IfNotPresent
+          args: ["server"]
+          ports:
+          - containerPort: 8000
+          envFrom:
+          - configMapRef:
+              name: fanclash-config
+          - configMapRef:
+              name: mobile-api-config
+          - configMapRef:
+              name: rmq-config
+          - configMapRef:
+              name: redis-config
+          - secretRef:
+              name: fcm-creds
+          - secretRef:
+              name: opta-feed-creds
+          - secretRef:
+              name: ortec-creds
+          - secretRef:
+              name: db-creds
+          - secretRef:
+              name: rmq-creds
+          env:
+          - name: DD_SERVICE_NAME
+            value: "mobile-api"
+          readinessProbe:
+            httpGet:
+              path: /readiness
+              port: 8000
+            initialDelaySeconds: 20
+            timeoutSeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "10m"
+          volumeMounts:
+          - name: kube-api-access-tnndf
+            readOnly: true
+            mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+
+        - name: celery-worker
+          image: registry.digitalocean.com/gameon-ams3/laliga-matchfantasy-admin:43221d3
+          imagePullPolicy: IfNotPresent
+          args: ["celery-worker"]
+          envFrom:
+          - configMapRef:
+              name: fanclash-config
+          - configMapRef:
+              name: mobile-api-config
+          - configMapRef:
+              name: rmq-config
+          - configMapRef:
+              name: redis-config
+          - secretRef:
+              name: fcm-creds
+          - secretRef:
+              name: opta-feed-creds
+          - secretRef:
+              name: ortec-creds
+          - secretRef:
+              name: db-creds
+          - secretRef:
+              name: rmq-creds
+          env:
+          - name: DD_SERVICE_NAME
+            value: "celery-worker"
+          volumeMounts:
+          - name: kube-api-access-tnndf
+            readOnly: true
+            mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+
+        - name: celery-beat
+          image: registry.digitalocean.com/gameon-ams3/laliga-matchfantasy-admin:43221d3
+          imagePullPolicy: IfNotPresent
+          args: ["celery-beat"]
+          envFrom:
+          - configMapRef:
+              name: fanclash-config
+          - configMapRef:
+              name: mobile-api-config
+          - configMapRef:
+              name: rmq-config
+          - configMapRef:
+              name: redis-config
+          - secretRef:
+              name: fcm-creds
+          - secretRef:
+              name: opta-feed-creds
+          - secretRef:
+              name: ortec-creds
+          - secretRef:
+              name: db-creds
+          - secretRef:
+              name: rmq-creds
+          env:
+          - name: DD_SERVICE_NAME
+            value: "celery-beat"
+          volumeMounts:
+          - name: kube-api-access-tnndf
+            readOnly: true
+            mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+
+        volumes:
+        - name: kube-api-access-tnndf
+          projected:
+            sources:
+            - serviceAccountToken:
+                path: token
+                expirationSeconds: 7200
+                audience: api

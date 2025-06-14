@@ -1,0 +1,87 @@
+services:
+  postgres:
+    restart: always
+    image: timescale/timescaledb:latest-pg16
+    command: ["postgres", "-c", "log_statement=all"]
+    env_file:
+      - .env.db
+    ports:
+      - '${POSTGRES_EXTERNAL_PORT}:${POSTGRES_INTERNAL_PORT}'
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}',
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 10
+      start_period: 3s
+    volumes:
+      - ./postgres/data:/var/lib/postgresql/data
+      - ./scripts/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+  redis:
+    restart: unless-stopped
+    image: redis:7-alpine
+    env_file:
+      - .env.db
+    ports:
+      - '${REDIS_PORT}:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
+      interval: 2s
+      timeout: 3s
+      retries: 10
+      start_period: 3s
+    command: redis-server --save "" --appendonly no --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - ./redis:/data
+  rabbitmq:
+    restart: unless-stopped
+    image: rabbitmq:3-management
+    env_file:
+      - .env.db
+    ports:
+      - '${RABBITMQ_PORT}:5672'              # RabbitMQ
+      - '${RABBITMQ_MANAGEMENT_PORT}:15672'  # Management interface
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 2s
+      timeout: 3s
+      retries: 10
+      start_period: 3s
+    volumes:
+      - ./rabbitmq/data:/var/lib/rabbitmq
+      - ./rabbitmq/log:/var/log/rabbitmq
+  # pgbouncer:
+  #   restart: always
+  #   image: edoburu/pgbouncer:latest
+  #   env_file:
+  #     - .env.db
+  #   ports:
+  #     - '${PGBOUNCER_PORT}:${PGBOUNCER_PORT}'
+  #   environment:
+  #     # - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB}?sslmode=disable
+  #     - DB_USER=${POSTGRES_USER}
+  #     - DB_PASSWORD=${POSTGRES_PASSWORD}
+  #     - DB_HOST=postgres
+  #     - DB_PORT=${POSTGRES_INTERNAL_PORT}
+  #     - DB_NAME=${POSTGRES_DB}
+  #     - POOL_MODE=session
+  #     - MAX_CLIENT_CONN=100
+  #     - DEFAULT_POOL_SIZE=20
+  #     - LISTEN_PORT=${PGBOUNCER_PORT}
+  #     - AUTH_TYPE=plain # for some reason even though you put md5 here, it still uses plain, pgbouncer bug?
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "pg_isready", "-h", "postgres"]
+  #     interval: 30s
+  #     timeout: 30s
+  #     retries: 5
+  #     start_period: 40s

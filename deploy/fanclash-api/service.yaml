@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Service
+metadata:
+  #namespace: qa
+  name: fanclash-api
+  labels:
+    app: fanclash-api
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 8000
+  selector:
+    app: fanclash-api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  #namespace: qa
+  name: fanclash-api-combined
+  labels:
+    app: fanclash-api-combined
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 8000
+  selector:
+    purpose: api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  #namespace: qa
+  name: fanclash-api-ws
+  labels:
+    app: fanclash-api-ws
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 8000
+  selector:
+    app: fanclash-api

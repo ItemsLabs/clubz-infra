@@ -1,0 +1,136 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  #namespace: qa
+  name: fanclash-api
+  labels:
+    app: fanclash-api
+    purpose: api
+    tags.datadoghq.com/env: "dev"
+    tags.datadoghq.com/service: "fanclash-api"
+    tags.datadoghq.com/version: "latest"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fanclash-api
+  minReadySeconds: 15
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: fanclash-api
+        purpose: api
+        tags.datadoghq.com/env: "qa"
+        tags.datadoghq.com/service: "fanclash-api"
+        tags.datadoghq.com/version: "latest"
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - mobile-api
+                topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: fanclash-api
+          image: 736790963086.dkr.ecr.us-east-1.amazonaws.com/fanclash-api:latest
+          # This setting makes nodes pull the docker image every time before starting the pod. This is useful when debugging, 
+          # but should be turned off in production.
+          imagePullPolicy: Always
+          env:
+            - name: ENV_NAME
+              value: "qa"
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: DD_ENV
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/env']
+            - name: DD_SERVICE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/service']
+            - name: DD_VERSION
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tags.datadoghq.com/version']
+            - name: DATABASE_NAME
+              value: "fanclash"
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                 name: db-creds
+                 key: DATABASE_USER
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                 name: db-creds
+                 key: DATABASE_PASSWORD
+            - name: DATABASE_HOST
+              valueFrom:
+                secretKeyRef:
+                 name: db-creds
+                 key: DATABASE_HOST
+            - name: RMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                 name: rabbitmq
+                 key: RMQ_PASSWORD
+            - name: PORT
+              value: "8000"
+            - name: FCM_CREDENTIALS
+              valueFrom:
+                secretKeyRef:
+                  name: fcm-creds
+                  key: FCM_CREDENTIALS
+            - name: STATSD_HOST
+              value: "telegraf.monitoring.svc"
+            - name: STATSD_PORT
+              value: "8125"
+            - name: TZ
+              value: "UTC"
+            - name: AMQP_GAMES_EXCHANGE
+              value: "games"
+            - name: RMQ_HOST
+              value: "rabbitmq-0.rabbitmq-headless.rabbitmq.svc.cluster.local"
+            - name: RMQ_PORT
+              value: "5672"
+            - name: RMQ_VHOST
+              value: "ufl"
+            - name: RMQ_USER
+              valueFrom:
+                secretKeyRef:
+                 name: rabbitmq
+                 key: RMQ_USER
+            - name: RMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                 name: rabbitmq
+                 key: RMQ_PASSWORD
+            - name: RMQ_GAME_UPDATES_EXCHANGE
+              value: "game_updates"
+            - name: RMQ_FCM_EXCHANGE
+              value: "fcm"
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /readiness
+              port: 8000
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 200m

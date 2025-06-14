@@ -1,0 +1,19 @@
+services:
+  event-processor:
+    restart: "no"
+    build:
+      context: ../../laliga-matchfantasy-event-processor
+      dockerfile: ../laliga-matchfantasy-event-processor/Dockerfile
+    env_file:
+      - .env.event
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - '${HOST_EVENT_PORT}:${EVENT_PORT}'
+    volumes:
+      - ../../laliga-matchfantasy-event-processor:/app

@@ -1,0 +1,44 @@
+services:
+  admin:
+    restart: "no"
+    build:
+      context: ../../clubz-admin
+      dockerfile: ../clubz-admin/Dockerfile
+    command: ["server"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env.admin
+    ports:
+      - '${ADMIN_PORT}:8000'
+    volumes:
+      - ../../laliga-matchfantasy-admin:/app
+  celery-worker:
+    restart: "no"
+    build:
+      context: ../../laliga-matchfantasy-admin
+      dockerfile: ../laliga-matchfantasy-admin/Dockerfile
+    command: [ "celery-worker" ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env.admin
+    ports:
+      - '5555:5555'
+    volumes:
+      - ../../laliga-matchfantasy-admin:/app
+  celery-beat:
+    restart: "no"
+    build:
+      context: ../../laliga-matchfantasy-admin
+      dockerfile: ../laliga-matchfantasy-admin/Dockerfile
+    command: [ "celery-beat" ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env.admin
+    volumes:
+      - ../../laliga-matchfantasy-admin:/app

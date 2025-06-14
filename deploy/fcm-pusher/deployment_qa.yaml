@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fcm-pusher
+  #namespace: qa
+  labels:
+    app: fcm-pusher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fcm-pusher
+  template:
+    metadata:
+      labels:
+        app: fcm-pusher
+    spec:
+      containers:
+      - name: fcm-pusher
+        image: 736790963086.dkr.ecr.us-east-1.amazonaws.com/fanclash-fcm-pusher:latest
+        imagePullPolicy: IfNotPresent
+        envFrom:
+          - secretRef:
+              name: fcm-creds
+        env:
+          - name: RMQ_HOST
+            value: "rabbitmq-0.rabbitmq-headless.rabbitmq.svc.cluster.local"
+          - name: RMQ_PORT
+            value: "5672"
+          - name: RMQ_VHOST
+            value: "ufl"
+          - name: RMQ_USER
+            valueFrom:
+              secretKeyRef:
+                name: rabbitmq
+                key: RMQ_USER
+          - name: RMQ_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: rabbitmq
+                key: RMQ_PASSWORD
+          - name: RMQ_FCM_EXCHANGE
+            value: "fcm"
+          - name: RMQ_FCM_PUSHER_QUEUE
+            value: "fcm:pusher"
+          - name: WORKER_COUNT
+            value: "20"
+          - name: PREFETCH_COUNT
+            value: "100"
+        resources:
+          requests:
+            cpu: 10m
