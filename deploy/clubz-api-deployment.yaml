@@ -47,6 +47,11 @@ spec:
                 secretKeyRef:
                  name: db-creds
                  key: DATABASE_HOST
+            - name: DATABASE_PORT
+              valueFrom:
+                secretKeyRef:
+                 name: db-creds
+                 key: DATABASE_PORT
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
@@ -88,6 +93,8 @@ spec:
               value: "your-jwt-secret-key-here"
             - name: ETHEREUM_CLIENT_URL
               value: ""
+            - name: DD_TRACE_ENABLED
+              value: "false"
           ports:
             - containerPort: 8000
           readinessProbe:

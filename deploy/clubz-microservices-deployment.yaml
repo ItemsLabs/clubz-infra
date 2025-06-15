@@ -39,11 +39,11 @@ spec:
                 secretKeyRef:
                  name: db-creds
                  key: DATABASE_HOST
-            - name: DATABASE_URL
+            - name: DATABASE_PORT
               valueFrom:
                 secretKeyRef:
                  name: db-creds
-                 key: DATABASE_URL
+                 key: DATABASE_PORT
             - name: RMQ_HOST
               value: "rabbitmq-service.clubz-dev.svc.cluster.local"
             - name: RMQ_PORT
@@ -169,11 +169,11 @@ spec:
                 secretKeyRef:
                  name: db-creds
                  key: DATABASE_HOST
-            - name: DATABASE_URL
+            - name: DATABASE_PORT
               valueFrom:
                 secretKeyRef:
                  name: db-creds
-                 key: DATABASE_URL
+                 key: DATABASE_PORT
             - name: RMQ_HOST
               value: "rabbitmq-service.clubz-dev.svc.cluster.local"
             - name: RMQ_PORT

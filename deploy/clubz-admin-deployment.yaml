@@ -21,6 +21,7 @@ spec:
         - name: clubz-admin
           image: registry.digitalocean.com/clubz-platform-registry/clubz-admin:latest
           imagePullPolicy: Always
+          args: ["server"]
           env:
             - name: DATABASE_NAME
               value: "defaultdb"
@@ -39,19 +40,54 @@ spec:
                 secretKeyRef:
                  name: db-creds
                  key: DATABASE_HOST
-            - name: DATABASE_URL
+            - name: DATABASE_PORT
               valueFrom:
                 secretKeyRef:
                  name: db-creds
-                 key: DATABASE_URL
+                 key: DATABASE_PORT
+
             - name: DJANGO_SECRET_KEY
               value: "your-django-secret-key-here"
             - name: DEBUG
               value: "False"
             - name: ALLOWED_HOSTS
               value: "*"
+            - name: DJANGO_SETTINGS_MODULE
+              value: "mobile_api.settings"
+            - name: AMQP_THROTTLING_ENABLED
+              value: "True"
+            - name: AMQP_THROTTLING_THRESHOLD
+              value: "55"
+            - name: AMQP_THROTTLING_SCHEDULE_INTERVAL
+              value: "60"
+            - name: AMQP_MATCH_EVENTS_EXCHANGE
+              value: "match_events"
+            - name: AMQP_GAMES_EXCHANGE
+              value: "games"
+            - name: AMQP_SYSTEM_EXCHANGE
+              value: "system"
+            - name: AMQP_NOTIFICATIONS_EXCHANGE
+              value: "notifications"
+            - name: RMQ_FCM_EXCHANGE
+              value: "fcm"
+            - name: RMQ_HOST
+              value: "rabbitmq-service.clubz-dev.svc.cluster.local"
+            - name: RMQ_PORT
+              value: "5672"
+            - name: RMQ_VHOST
+              value: "/"
+            - name: RMQ_USER
+              valueFrom:
+                secretKeyRef:
+                 name: rabbitmq
+                 key: RMQ_USER
+            - name: RMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                 name: rabbitmq
+                 key: RMQ_PASSWORD
           ports:
-            - containerPort: 10000
+            - containerPort: 8000
           resources:
             requests:
               cpu: 200m
@@ -71,5 +107,5 @@ spec:
   ports:
     - protocol: TCP
       port: 80
-      targetPort: 10000
+      targetPort: 8000
   type: LoadBalancer 
