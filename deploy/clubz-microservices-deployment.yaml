@@ -116,6 +116,10 @@ spec:
               value: "fcm"
             - name: RMQ_FCM_QUEUE
               value: "fcm_queue"
+            - name: RMQ_FCM_PUSHER_QUEUE
+              value: "fcm_pusher_queue"
+            - name: WORKER_COUNT
+              value: "1"
           resources:
             requests:
               cpu: 100m
