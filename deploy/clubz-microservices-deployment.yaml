@@ -1,0 +1,217 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clubz-rabbitmq-publisher
+  namespace: clubz-dev
+  labels:
+    app: clubz-rabbitmq-publisher
+    purpose: publisher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clubz-rabbitmq-publisher
+  template:
+    metadata:
+      labels:
+        app: clubz-rabbitmq-publisher
+        purpose: publisher
+    spec:
+      containers:
+        - name: clubz-rabbitmq-publisher
+          image: registry.digitalocean.com/clubz-platform-registry/clubz-rabbitmq-publisher:latest
+          imagePullPolicy: Always
+          env:
+            - name: DATABASE_NAME
+              value: "defaultdb"
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                 name: db-creds
+                 key: DATABASE_USER
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                 name: db-creds
+                 key: DATABASE_PASSWORD
+            - name: DATABASE_HOST
+              valueFrom:
+                secretKeyRef:
+                 name: db-creds
+                 key: DATABASE_HOST
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                 name: db-creds
+                 key: DATABASE_URL
+            - name: RMQ_HOST
+              value: "rabbitmq-service.clubz-dev.svc.cluster.local"
+            - name: RMQ_PORT
+              value: "5672"
+            - name: RMQ_VHOST
+              value: "/"
+            - name: RMQ_EXCHANGES
+              value: "games,game_updates,fcm"
+            - name: RMQ_USER
+              valueFrom:
+                secretKeyRef:
+                 name: rabbitmq
+                 key: RMQ_USER
+            - name: RMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                 name: rabbitmq
+                 key: RMQ_PASSWORD
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clubz-fcm-pusher
+  namespace: clubz-dev
+  labels:
+    app: clubz-fcm-pusher
+    purpose: pusher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clubz-fcm-pusher
+  template:
+    metadata:
+      labels:
+        app: clubz-fcm-pusher
+        purpose: pusher
+    spec:
+      containers:
+        - name: clubz-fcm-pusher
+          image: registry.digitalocean.com/clubz-platform-registry/clubz-fcm-pusher:latest
+          imagePullPolicy: Always
+          env:
+            - name: RMQ_HOST
+              value: "rabbitmq-service.clubz-dev.svc.cluster.local"
+            - name: RMQ_PORT
+              value: "5672"
+            - name: RMQ_VHOST
+              value: "/"
+            - name: RMQ_USER
+              valueFrom:
+                secretKeyRef:
+                 name: rabbitmq
+                 key: RMQ_USER
+            - name: RMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                 name: rabbitmq
+                 key: RMQ_PASSWORD
+            - name: FCM_CREDENTIALS
+              value: "{}"
+            - name: RMQ_FCM_EXCHANGE
+              value: "fcm"
+            - name: RMQ_FCM_QUEUE
+              value: "fcm_queue"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clubz-event-processor
+  namespace: clubz-dev
+  labels:
+    app: clubz-event-processor
+    purpose: processor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clubz-event-processor
+  template:
+    metadata:
+      labels:
+        app: clubz-event-processor
+        purpose: processor
+    spec:
+      containers:
+        - name: clubz-event-processor
+          image: registry.digitalocean.com/clubz-platform-registry/clubz-event-processor:latest
+          imagePullPolicy: Always
+          env:
+            - name: DATABASE_NAME
+              value: "defaultdb"
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                 name: db-creds
+                 key: DATABASE_USER
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                 name: db-creds
+                 key: DATABASE_PASSWORD
+            - name: DATABASE_HOST
+              valueFrom:
+                secretKeyRef:
+                 name: db-creds
+                 key: DATABASE_HOST
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                 name: db-creds
+                 key: DATABASE_URL
+            - name: RMQ_HOST
+              value: "rabbitmq-service.clubz-dev.svc.cluster.local"
+            - name: RMQ_PORT
+              value: "5672"
+            - name: RMQ_VHOST
+              value: "/"
+            - name: RMQ_USER
+              valueFrom:
+                secretKeyRef:
+                 name: rabbitmq
+                 key: RMQ_USER
+            - name: RMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                 name: rabbitmq
+                 key: RMQ_PASSWORD
+            - name: REDIS_ADDRESS
+              value: "redis-service.clubz-dev.svc.cluster.local:6379"
+            - name: REDIS_PASSWORD
+              value: ""
+            - name: REDIS_DB
+              value: "0"
+            - name: RMQ_MATCH_EVENT_EXCHANGE
+              value: "match_events"
+            - name: RMQ_PROCESSOR_QUEUE
+              value: "event_processor_queue"
+            - name: RMQ_FCM_EXCHANGE
+              value: "fcm"
+            - name: RMQ_GAMES_EXCHANGE
+              value: "games"
+            - name: RMQ_GAMES_LISTENER_QUEUE
+              value: "games_listener_queue"
+            - name: RMQ_SYSTEM_EXCHANGE
+              value: "system"
+            - name: RMQ_SYSTEM_LISTENER_QUEUE
+              value: "system_listener_queue"
+            - name: RMQ_GAME_UPDATES_EXCHANGE
+              value: "game_updates"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi 

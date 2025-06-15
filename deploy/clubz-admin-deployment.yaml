@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clubz-admin
+  namespace: clubz-dev
+  labels:
+    app: clubz-admin
+    purpose: admin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clubz-admin
+  template:
+    metadata:
+      labels:
+        app: clubz-admin
+        purpose: admin
+    spec:
+      containers:
+        - name: clubz-admin
+          image: registry.digitalocean.com/clubz-platform-registry/clubz-admin:latest
+          imagePullPolicy: Always
+          env:
+            - name: DATABASE_NAME
+              value: "defaultdb"
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                 name: db-creds
+                 key: DATABASE_USER
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                 name: db-creds
+                 key: DATABASE_PASSWORD
+            - name: DATABASE_HOST
+              valueFrom:
+                secretKeyRef:
+                 name: db-creds
+                 key: DATABASE_HOST
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                 name: db-creds
+                 key: DATABASE_URL
+            - name: DJANGO_SECRET_KEY
+              value: "your-django-secret-key-here"
+            - name: DEBUG
+              value: "False"
+            - name: ALLOWED_HOSTS
+              value: "*"
+          ports:
+            - containerPort: 10000
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clubz-admin-service
+  namespace: clubz-dev
+spec:
+  selector:
+    app: clubz-admin
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 10000
+  type: LoadBalancer 
